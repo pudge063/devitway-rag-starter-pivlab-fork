@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "rag_server"
+version = "0.0.1"
+description = ""
+packages = [ { include = "rag" } ]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+click = "^8.4.1"
+pre-commit = "^4.6.0"
+black = "^26.5.1"
+isort = "^8.0.1"
+llama-index-core = ">=0.12,<0.13"
+llama-index-embeddings-ollama = ">=0.5,<0.6"
+llama-index-vector-stores-qdrant = ">=0.4,<0.5"
+llama-index-readers-file = ">=0.4,<0.5"
+qdrant-client = ">=1.12"
+mcp = ">=1.2"
+
+[tool.poetry.scripts]
+rag = "rag.cli:cli"
+
+[tool.isort]
+py_version = 310
+profile = "black"
+line_length = 120
+group_by_package = true
+skip_gitignore = true
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

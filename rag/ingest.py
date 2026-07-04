@@ -11,32 +11,37 @@
 Состояние (что уже проиндексировано) лежит в config.PIPELINE_DIR.
 Это и есть "процесс, который обновляется" — вешаешь на cron/watch (см. README).
 """
-import sys
+
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 import qdrant_client
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.storage.docstore import SimpleDocumentStore
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.vector_stores.qdrant import QdrantVectorStore
+from llama_index.embeddings.ollama import OllamaEmbedding  # type: ignore
+from llama_index.vector_stores.qdrant import QdrantVectorStore  # type: ignore
 
-import config
+from . import config
 
 
 def build_pipeline() -> IngestionPipeline:
-    client = qdrant_client.QdrantClient(url=config.QDRANT_URL)
-    vector_store = QdrantVectorStore(client=client, collection_name=config.COLLECTION)
+    client = qdrant_client.QdrantClient(url=config.get_qdrant_url())
+    vector_store = QdrantVectorStore(client=client, collection_name=config.get_collection())
 
     pipeline = IngestionPipeline(
         transformations=[
             SentenceSplitter(
-                chunk_size=config.CHUNK_SIZE,
-                chunk_overlap=config.CHUNK_OVERLAP,
+                chunk_size=config.get_chunk_size(),
+                chunk_overlap=config.get_chunk_overlap(),
             ),
             OllamaEmbedding(
-                model_name=config.EMBED_MODEL,
-                base_url=config.OLLAMA_URL,
+                model_name=config.get_embedding_model(),
+                base_url=config.get_ollama_url(),
             ),
         ],
         docstore=SimpleDocumentStore(),
@@ -47,8 +52,9 @@ def build_pipeline() -> IngestionPipeline:
 
     # Подхватываем прошлое состояние; если его нет — первый (полный) прогон.
     try:
-        pipeline.load(config.PIPELINE_DIR)
-        print(f"[ingest] состояние загружено из {config.PIPELINE_DIR}")
+        pipeline_dir = config.get_pipeline_dir()
+        pipeline.load(pipeline_dir)
+        print(f"[ingest] состояние загружено из {pipeline_dir}")
     except FileNotFoundError:
         print("[ingest] прошлого состояния нет — первый полный индекс")
 
@@ -67,14 +73,9 @@ def main(docs_dir: str) -> None:
 
     pipeline = build_pipeline()
     nodes = pipeline.run(documents=documents, show_progress=True)
-    pipeline.persist(config.PIPELINE_DIR)
+    pipeline.persist(config.get_pipeline_dir())
 
     print(
         f"[ingest] готово: обработано {len(nodes)} новых/изменённых чанк(ов) "
-        f"в коллекции '{config.COLLECTION}' (0 = ничего не менялось)"
+        f"в коллекции '{config.get_collection()}' (0 = ничего не менялось)"
     )
-
-
-if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else "./docs"
-    main(target)

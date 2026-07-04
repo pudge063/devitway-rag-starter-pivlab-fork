@@ -38,15 +38,14 @@ docker compose up -d
 ollama pull bge-m3
 
 # 3. Python-окружение
-python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+poetry install
+. .venv/bin/activate
 
 # 4. Проиндексировать документы (в ./docs уже лежит пример)
-python ingest.py ./docs
+rag ingest -d ./docs
 
 # 5. Проверить, что сервер поднимается (Ctrl+C для выхода)
-python mcp_server.py
+rag mcp-server
 ```
 
 Готово — RAG работает. Осталось подключить агента (ниже).
@@ -68,7 +67,7 @@ python mcp_server.py
 
 **Cron** (каждые 15 минут):
 ```cron
-*/15 * * * * cd /path/to/devitway-rag-starter && .venv/bin/python ingest.py ./docs >> ingest.log 2>&1
+*/15 * * * * cd /home/ai/rag_server && /home/ai/rag_server/.venv/bin/rag ingest -d "/home/ai/rag_server/docs" >> /home/ai/rag_server/ingest.log 2>&1
 ```
 
 **Watch** (реагировать на изменения сразу, нужен `inotify-tools`):
@@ -93,8 +92,8 @@ done
 {
   "mcpServers": {
     "rag": {
-      "command": "/path/to/devitway-rag-starter/.venv/bin/python",
-      "args": ["/path/to/devitway-rag-starter/mcp_server.py"]
+      "command": "/home/ai/rag_server/.venv/bin/rag",
+      "args": ["mcp-server"]
     }
   }
 }
@@ -103,7 +102,7 @@ done
 ### Claude Code
 
 ```bash
-claude mcp add rag -- /path/to/devitway-rag-starter/.venv/bin/python /path/to/devitway-rag-starter/mcp_server.py
+claude mcp add rag -- /home/ai/rag_server/.venv/bin/rag /home/ai/rag_server/.venv/bin/rag
 ```
 
 Проверка: спроси агента что-нибудь по содержимому `./docs` — он должен вызвать
