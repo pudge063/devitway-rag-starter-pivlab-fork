@@ -125,6 +125,7 @@ claude mcp add rag -- /home/ai/rag_server/.venv/bin/rag /home/ai/rag_server/.ven
 | `Connection refused` к Qdrant | Не поднят `docker compose up -d` или занят порт 6333. |
 | `model not found` | Забыл `ollama pull bge-m3`. |
 | Агент не видит MCP-сервер | `command` должен указывать на `.venv/bin/python` (абсолютный путь), не на системный python. |
+| Сервер подключён, но агент не вызывает `search` (даже по явной просьбе) | Обычно виновата локальная модель, а не RAG. Qwen3 через ollama не отдаёт tool_call в стриминге ([ollama#14601](https://github.com/ollama/ollama/issues/14601)) — приходит пустой ответ, и промптом это не лечится. Проверь слой отдельно: `python -c "from mcp_server import search; print(search('ollama'))"` — если фрагменты вернулись, меняй модель: `ollama pull gpt-oss:20b` (tool calling стабилен) или облачная (в qwen-code — дефолтный Qwen OAuth). Для qwen-code нужна версия ≥0.18.4 — старые флапают тул-коллинг с любой локальной моделью. |
 
 ## Структура
 
